@@ -1,5 +1,5 @@
 # paper_search_mcp/server.py
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import httpx
 from mcp.server.fastmcp import FastMCP
 from .academic_platforms.arxiv import ArxivSearcher
@@ -13,9 +13,13 @@ from .academic_platforms.crossref import CrossRefSearcher
 
 # from .academic_platforms.hub import SciHubSearcher
 from .paper import Paper
+from .rag.manager import RAGManager
 
 # Initialize MCP server
 mcp = FastMCP("paper_search_server")
+
+# Initialize RAG Manager
+rag_manager = RAGManager()
 
 # Instances of searchers
 arxiv_searcher = ArxivSearcher()
@@ -428,6 +432,92 @@ async def read_crossref_paper(paper_id: str, save_path: str = "./downloads") -> 
         Use the DOI to access the paper through the publisher's website.
     """
     return crossref_searcher.read_paper(paper_id, save_path)
+
+
+# -----------------------------------------------------------------------------
+# RAG Tools
+# -----------------------------------------------------------------------------
+
+@mcp.tool()
+async def rag_create_session() -> str:
+    """Create a new RAG session for querying papers.
+    
+    Returns:
+        session_id: A unique ID for the new session.
+    """
+    return rag_manager.create_session()
+
+@mcp.tool()
+async def rag_delete_session(session_id: str) -> str:
+    """Delete a RAG session and free resources.
+    
+    Args:
+        session_id: ID of the session to delete.
+    """
+    if rag_manager.delete_session(session_id):
+        return f"Session {session_id} deleted."
+    return f"Session {session_id} not found."
+
+@mcp.tool()
+async def rag_list_sessions() -> List[str]:
+    """List all active RAG session IDs."""
+    return rag_manager.list_sessions()
+
+@mcp.tool()
+async def rag_add_paper(session_id: str, paper_id: str, platform: str = "arxiv") -> str:
+    """Download a paper and add it to a RAG session.
+    
+    Args:
+        session_id: The active session ID.
+        paper_id: ID of the paper (e.g., arXiv ID, DOI).
+        platform: Source platform ('arxiv', 'biorxiv', 'medrxiv', 'iacr', 'semantic').
+                 Default is 'arxiv'.
+    """
+    save_path = "./downloads"
+    import os
+    os.makedirs(save_path, exist_ok=True)
+    
+    # 1. Download the paper
+    path = ""
+    try:
+        if platform == "arxiv":
+            path = arxiv_searcher.download_pdf(paper_id, save_path)
+        elif platform == "biorxiv":
+            path = biorxiv_searcher.download_pdf(paper_id, save_path)
+        elif platform == "medrxiv":
+            path = medrxiv_searcher.download_pdf(paper_id, save_path)
+        elif platform == "iacr":
+            path = iacr_searcher.download_pdf(paper_id, save_path)
+        elif platform == "semantic":
+            path = semantic_searcher.download_pdf(paper_id, save_path)
+        else:
+            return f"Platform '{platform}' not supported for automatic RAG addition yet."
+    except Exception as e:
+        return f"Download failed: {str(e)}"
+
+    if not path or not os.path.exists(path):
+        return f"Failed to download paper (path not found): {path}"
+
+    # 2. Add to RAG session
+    return rag_manager.add_paper(session_id, paper_id, path)
+
+@mcp.tool()
+async def rag_query(session_id: str, query: str, k: int = 5) -> List[Dict[str, Any]]:
+    """Query the RAG session for relevant context.
+    
+    Args:
+        session_id: The active session ID.
+        query: The question or query string.
+        k: Number of chunks to retrieve (default: 5).
+        
+    Returns:
+        List of relevant text chunks with metadata.
+    """
+    try:
+        return rag_manager.query(session_id, query, k)
+    except ValueError as e:
+        return [{"error": str(e)}]
+
 
 
 if __name__ == "__main__":
