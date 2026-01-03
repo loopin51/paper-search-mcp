@@ -1,0 +1,9 @@
+mcp[cli]
+uvicorn
+httpx
+fastmcp
+docling
+sentence-transformers
+numpy
+faiss-gpu
+torch --index-url https://download.pytorch.org/whl/cu121

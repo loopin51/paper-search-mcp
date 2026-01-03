@@ -149,6 +149,38 @@ npx -y @smithery/cli install @openags/paper-search-mcp --client claude
 
 ---
 
+## 프로덕션 배포 (Production Deployment)
+
+이 저장소는 **Ubuntu 서버 + NVIDIA GPU (CUDA)** 환경에서의 운영을 위한 별도의 배포 패키지(`/deploy`)를 포함하고 있습니다.
+
+### 특징
+
+- **전용 환경**: 로컬 개발과 분리된 독립적인 코드베이스(`deploy/`) 사용.
+- **고성능 RAG**: `faiss-gpu` 및 `torch (CUDA)`를 사용하여 임베딩 및 검색 속도 최적화.
+- **웹 서버**: `Streamable HTTP` (SSE 지원) 기반의 웹 서버로 동작 (기본 포트: 8100).
+- **Docker 지원**: `nvidia/cuda:12.1.0` 기반 이미지로 드라이버 호환성 보장.
+
+### 배포 방법
+
+1. **서버로 코드 복사**:
+
+   ```bash
+   git clone https://github.com/yourusername/paper-search-mcp.git
+   cd paper-search-mcp/deploy
+   ```
+
+2. **Docker Compose 실행**:
+   NVIDIA Container Toolkit이 설치된 상태여야 합니다.
+
+   ```bash
+   docker-compose up --build -d
+   ```
+
+3. **접속**:
+   서버가 시작되면 `http://<서버-IP>:8100/sse` 엔드포인트를 통해 MCP 클라이언트에서 접속할 수 있습니다.
+
+---
+
 ## 기여하기
 
 기여는 언제나 환영합니다! 다음 절차를 따라주세요:
