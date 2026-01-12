@@ -8,6 +8,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Install System Dependencies (Python + common tools)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
+    python3-dev \
     python3-pip \
     python3-venv \
     curl \
@@ -15,9 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for fast python package management
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
+# Install uv using the official image (reliable method)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# ENV PATH is not needed for uv as it is in /usr/local/bin
 
 WORKDIR /app
 
@@ -26,7 +27,7 @@ COPY requirements.txt .
 
 # Install dependencies
 # Using system python for simplicity in this container
-RUN uv pip install --system -r requirements.txt
+RUN uv pip install --system --index-strategy unsafe-best-match --extra-index-url https://download.pytorch.org/whl/cu121 -r requirements.txt
 
 # Copy application code
 COPY . .

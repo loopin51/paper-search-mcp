@@ -1,9 +1,14 @@
+requests
+feedparser
+PyPDF2>=3.0.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
 mcp[cli]
 uvicorn
-httpx
+httpx[socks]
 fastmcp
 docling
 sentence-transformers
-numpy
+numpy<2.0.0
 faiss-gpu
-torch --index-url https://download.pytorch.org/whl/cu121
+torch

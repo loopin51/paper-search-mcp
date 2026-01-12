@@ -15,4 +15,5 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
     restart: always
